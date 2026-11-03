@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KalKaMain – Your Future Self</title>
+<meta name="theme-color" content="#100d20">
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#100d20;color:white;
+ font-family:Arial,sans-serif;
+}
+header{
+ padding:22px;text-align:center;
+ background:#19142c;border-bottom:1px solid #39304e;
+}
+.logo{font-size:30px;font-weight:900;color:#d9a5ff}
+header p{color:#c6b9d7;margin:8px 0 0}
+main{max-width:650px;margin:auto;padding:20px}
+h1{text-align:center;font-size:29px}
+.sub{text-align:center;color:#b9adc9;line-height:1.5}
+.upload{
+ margin:25px 0;padding:30px 15px;
+ border:2px dashed #a66bda;border-radius:18px;
+ text-align:center;background:#1c1730;
+}
+.upload label{
+ display:inline-block;padding:14px 22px;
+ background:#a64ee8;border-radius:12px;
+ font-weight:bold;cursor:pointer;
+}
+input{display:none}
+#preview{
+ display:none;width:100%;max-height:430px;
+ object-fit:contain;border-radius:16px;
+ background:#211a35;margin-top:18px;
+}
+h2{font-size:19px;margin-top:28px}
+.styles{
+ display:grid;grid-template-columns:1fr 1fr;gap:12px;
+}
+.style{
+ background:#211b35;color:white;
+ padding:17px 10px;border:2px solid #39304e;
+ border-radius:13px;text-align:center;cursor:pointer;
+ font-size:15px;
+}
+.style.active{border-color:#d18cff;background:#38204c}
+.style span{display:block;font-size:25px;margin-bottom:8px}
+button.action{
+ width:100%;padding:17px;border:0;border-radius:13px;
+ background:linear-gradient(90deg,#9c42df,#e05cbb);
+ color:white;font-weight:bold;font-size:17px;
+ margin-top:22px;cursor:pointer;
+}
+button:disabled{opacity:.45}
+#result{display:none;margin-top:25px;text-align:center}
+#result canvas{
+ width:100%;border-radius:16px;background:#211a35;
+}
+.download{
+ display:block;text-decoration:none;text-align:center;
+ background:#fff;color:#21132e;padding:15px;
+ border-radius:12px;font-weight:bold;margin-top:15px;
+}
+.note{font-size:12px;color:#a99db8;text-align:center;line-height:1.6;margin-top:25px}
+footer{text-align:center;padding:25px;color:#a99db8}
+</style>
+</head>
+<body>
+
+<header>
+ <div class="logo">✨ KalKaMain</div>
+ <p>Your Future Self Generator</p>
+</header>
+
+<main>
+ <h1>देखो अपना आने वाला कल!</h1>
+ <p class="sub">अपनी फोटो चुनें और अपने Future Self का नया स्टाइल प्रीव्यू बनाएं।</p>
+
+ <div class="upload">
+  <div style="font-size:45px">📸</div>
+  <h3>अपनी फोटो अपलोड करें</h3>
+  <p style="color:#b9adc9">साफ चेहरे वाली फोटो चुनें</p>
+  <label for="photo">फोटो चुनें</label>
+  <input type="file" id="photo" accept="image/*">
+  <img id="preview" alt="आपकी फोटो">
+ </div>
+
+ <h2>अपना Future Style चुनें</h2>
+ <div class="styles">
+  <button class="style active" data-filter="normal"><span>👑</span>Royal Look</button>
+  <button class="style" data-filter="cinema"><span>🎬</span>Cinematic</button>
+  <button class="style" data-filter="gold"><span>✨</span>Golden Future</button>
+  <button class="style" data-filter="cool"><span>😎</span>Superstar</button>
+  <button class="style" data-filter="dream"><span>🌌</span>Dream World</button>
+  <button class="style" data-filter="vintage"><span>📷</span>Vintage</button>
+  <button class="style" data-filter="bright"><span>🌟</span>Bright Future</button>
+  <button class="style" data-filter="mono"><span>🖤</span>Black & White</button>
+ </div>
+
+ <button class="action" id="generate" disabled>
+  ✨ Create My Preview
+ </button>
+
+ <div id="result">
+  <h2>आपका नया लुक तैयार है!</h2>
+  <canvas id="canvas"></canvas>
+  <a id="download" class="download" download="KalKaMain-Future.jpg">
+   ⬇ Download Photo
+  </a>
+ </div>
+
+ <p class="note">
+ यह पहला स्टूडियो डेमो है। अभी इसमें फोटो पर विजुअल फिल्टर लगते हैं,
+ असली AI से चेहरा या भविष्य का रूप नहीं बदलता।
+ वास्तविक AI जनरेशन अगले चरण में जोड़ी जाएगी।
+ </p>
+</main>
+
+<footer>© 2026 KalKaMain | Imagine Your Tomorrow ❤️</footer>
+
+<script>
+const photo=document.getElementById('photo');
+const preview=document.getElementById('preview');
+const generate=document.getElementById('generate');
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const result=document.getElementById('result');
+let selected='normal';
+let image=new Image();
+
+const filters={
+ normal:'contrast(1.12) saturate(1.2)',
+ cinema:'contrast(1.35) saturate(1.15) sepia(.15)',
+ gold:'sepia(.55) saturate(1.5) contrast(1.1)',
+ cool:'contrast(1.3) saturate(.8) brightness(1.05)',
+ dream:'brightness(1.18) saturate(1.4)',
+ vintage:'sepia(.65) contrast(.9)',
+ bright:'brightness(1.22) saturate(1.25)',
+ mono:'grayscale(1) contrast(1.2)'
+};
+
+photo.addEventListener('change',()=>{
+ const file=photo.files[0];
+ if(!file)return;
+ if(!file.type.startsWith('image/')){
+  alert('कृपया सही फोटो चुनें।');return;
+ }
+ if(file.size>10*1024*1024){
+  alert('कृपया 10 MB से छोटी फोटो चुनें।');return;
+ }
+ const url=URL.createObjectURL(file);
+ image.onload=()=>{
+  preview.src=url;
+  preview.style.display='block';
+  generate.disabled=false;
+  result.style.display='none';
+ };
+ image.onerror=()=>alert('फोटो खुल नहीं पाई। दूसरी फोटो चुनें।');
+ image.src=url;
+});
+
+document.querySelectorAll('.style').forEach(button=>{
+ button.addEventListener('click',()=>{
+  document.querySelectorAll('.style').forEach(b=>b.classList.remove('active'));
+  button.classList.add('active');
+  selected=button.dataset.filter;
+ });
+});
+
+generate.addEventListener('click',()=>{
+ if(!image.src)return;
+ const max=1200;
+ const scale=Math.min(1,max/image.width,max/image.height);
+ canvas.width=Math.round(image.width*scale);
+ canvas.height=Math.round(image.height*scale);
+
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.filter=filters[selected];
+ ctx.drawImage(image,0,0,canvas.width,canvas.height);
+ ctx.filter='none';
+
+ const gradient=ctx.createLinearGradient(0,canvas.height*.7,0,canvas.height);
+ gradient.addColorStop(0,'transparent');
+ gradient.addColorStop(1,'rgba(15,5,30,.65)');
+ ctx.fillStyle=gradient;
+ ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ result.style.display='block';
+ const link=document.getElementById('download');
+ link.href=canvas.toDataURL('image/jpeg',.92);
+ result.scrollIntoView({behavior:'smooth'});
+});
+</script>
+</body>
+</html>
