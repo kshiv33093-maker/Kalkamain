@@ -1,0 +1,7 @@
+
+worker.js
+worker-new.js
+wrangler.toml
+.assetsignore
+README.md
+.git*
