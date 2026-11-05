@@ -1,0 +1,117 @@
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/api/edit") {
+      if (request.method !== "POST") {
+        return Response.json(
+          { error: "POST method required." },
+          { status: 405 }
+        );
+      }
+
+      try {
+        if (!env.OPENAI_API_KEY) {
+          return Response.json(
+            { error: "AI service key is not configured." },
+            { status: 500 }
+          );
+        }
+
+        const length = Number(request.headers.get("content-length") || 0);
+        if (length > 10 * 1024 * 1024) {
+          return Response.json(
+            { error: "Image is too large. Please upload a smaller photo." },
+            { status: 413 }
+          );
+        }
+
+        const body = await request.json();
+        const image = body.image;
+        const prompt = body.prompt;
+
+        if (
+          typeof image !== "string" ||
+          !/^data:image\/(jpeg|png|webp);base64,/.test(image)
+        ) {
+          return Response.json(
+            { error: "Please upload a valid JPG, PNG or WebP image." },
+            { status: 400 }
+          );
+        }
+
+        if (image.length > 9 * 1024 * 1024) {
+          return Response.json(
+            { error: "Image is too large. Please choose a smaller photo." },
+            { status: 413 }
+          );
+        }
+
+        if (
+          typeof prompt !== "string" ||
+          prompt.trim().length < 3 ||
+          prompt.length > 5000
+        ) {
+          return Response.json(
+            { error: "Please enter a valid photo style." },
+            { status: 400 }
+          );
+        }
+
+        const apiResponse = await fetch(
+          "https://api.openai.com/v1/images/edits",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: "gpt-image-2.5-sunburst",
+              images: [
+                { image_url: image }
+              ],
+              prompt: prompt,
+              quality: "high",
+              size: "1024x1024",
+              output_format: "png",
+              n: 1
+            })
+          }
+        );
+
+        const result = await apiResponse.json();
+
+        if (!apiResponse.ok) {
+          return Response.json(
+            {
+              error: result.error?.message ||
+                "AI image service could not complete the request."
+            },
+            { status: apiResponse.status }
+          );
+        }
+
+        const generatedImage = result.data?.[0]?.b64_json;
+
+        if (!generatedImage) {
+          return Response.json(
+            { error: "AI did not return an image. Please try again." },
+            { status: 502 }
+          );
+        }
+
+        return Response.json({ image: generatedImage });
+
+      } catch (error) {
+        return Response.json(
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
+        );
+      }
+    }
+
+    return env.ASSETS.fetch(request);
+  }
+};
