@@ -1,4 +1,9 @@
 name = "kalkamain-photo-ai"
-main = "worker.js"
+main = "worker-new.js"
 compatibility_date = "2026-11-05"
 workers_dev = true
+
+[assets]
+directory = "./"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
