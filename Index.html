@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Photo Studio</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#100d20;color:#fff;font-family:Arial,sans-serif}
+main{max-width:850px;margin:auto;padding:22px 16px}
+h1{text-align:center;font-size:25px;margin:12px 0 6px}
+.sub{text-align:center;color:#c9c1dc;font-size:14px;margin-bottom:25px}
+.panel{background:#211b35;border:1px solid #45365f;border-radius:18px;padding:18px;margin-bottom:18px}
+label{display:block;font-size:14px;margin:13px 0 8px;color:#eee}
+input,select,textarea{width:100%;padding:13px;border-radius:10px;border:1px solid #62527d;background:#171326;color:white;font-size:15px}
+textarea{min-height:90px;resize:vertical}
+button{border:0;border-radius:11px;padding:14px 18px;font-weight:bold;font-size:15px;cursor:pointer}
+.primary{width:100%;background:linear-gradient(90deg,#ff9b28,#ff4e9b);color:white;margin-top:16px}
+button:disabled{opacity:.5;cursor:not-allowed}
+#preview,#result{width:100%;max-height:480px;object-fit:contain;border-radius:12px;margin-top:12px;display:none;background:#100d20}
+#status{text-align:center;color:#ffd28b;margin-top:14px;white-space:pre-wrap;font-size:14px}
+#download{display:none;text-align:center;text-decoration:none;background:#37bd83;color:#071d14;padding:14px;border-radius:11px;margin-top:14px;font-weight:bold}
+.small{font-size:12px;color:#b9b0ca;line-height:1.6}
+.footer{text-align:center;font-size:11px;color:#aaa;margin:24px}
+</style>
+</head>
+<body>
+<main>
+<h1>अपनी फोटो को नया अंदाज़ दें</h1>
+<p class="sub">अपनी पसंद का लुक चुनें और AI से फोटो बनाएं</p>
+
+<section class="panel">
+<label>1. अपनी फोटो अपलोड करें</label>
+<input id="photo" type="file" accept="image/*">
+<img id="preview" alt="आपकी अपलोड की गई फोटो">
+<p class="small">अच्छी रोशनी वाली साफ फोटो इस्तेमाल करें।</p>
+</section>
+
+<section class="panel">
+<label>2. फोटो का स्टाइल चुनें</label>
+<select id="style">
+<option value="Ghibli-inspired storybook illustration">Ghibli-inspired Storybook</option>
+<option value="beautiful high-quality 3D cartoon portrait">3D Cartoon</option>
+<option value="anime portrait illustration">Anime</option>
+<option value="colorful Pixar-inspired 3D animated portrait">Pixar-inspired 3D</option>
+<option value="realistic birthday photoshoot with cake and balloons">Birthday</option>
+<option value="beautiful Diwali photoshoot with diyas and lights">Diwali</option>
+<option value="traditional Lohri celebration near bonfire">Lohri</option>
+<option value="colorful Holi celebration with gulal">Holi</option>
+<option value="traditional Indian wedding photoshoot">Wedding</option>
+<option value="romantic anniversary photoshoot">Anniversary</option>
+<option value="royal Indian king or queen portrait">Royal Look</option>
+<option value="traditional Indian ethnic outfit photoshoot">Traditional Indian</option>
+<option value="beautiful romantic couple photoshoot">Couple</option>
+<option value="cute baby 3D cartoon portrait">Baby Cartoon</option>
+<option value="Christmas festive photoshoot with snow">Christmas</option>
+<option value="Makar Sankranti kite festival photoshoot">Makar Sankranti</option>
+<option value="Raksha Bandhan festive photoshoot">Raksha Bandhan</option>
+<option value="dreamy fantasy portrait with magical flowers">Dream Look</option>
+<option value="cinematic future self portrait">Future Self</option>
+<option value="professional cinematic portrait photography">Cinematic</option>
+<option value="CUSTOM">अपनी पसंद खुद लिखें</option>
+</select>
+
+<label>3. अपनी पसंद बताएं (वैकल्पिक)</label>
+<textarea id="custom" placeholder="जैसे: मुझे लाल शाही कपड़ों में पहाड़ों के बीच फोटो चाहिए..."></textarea>
+
+<label>4. Collage में कितने पैनल चाहिए?</label>
+<select id="panels">
+<option value="1">1 फोटो</option>
+<option value="4">4 पैनल</option>
+<option value="6">6 पैनल</option>
+<option value="9">9 पैनल</option>
+<option value="12">12 पैनल</option>
+<option value="16">16 पैनल</option>
+<option value="20">20 पैनल</option>
+<option value="24">24 पैनल</option>
+</select>
+<p class="small">1 चुनने पर एक फोटो बनेगी। बाकी विकल्प एक ही तस्वीर में कई अलग-अलग पैनल वाला कोलाज बनाने के लिए हैं।</p>
+
+<button class="primary" id="generate">✨ मेरी AI फोटो बनाएं</button>
+<div id="status"></div>
+</section>
+
+<section class="panel">
+<label>आपकी तैयार फोटो</label>
+<img id="result" alt="AI से बनी फोटो">
+<a id="download" download="KalkaMain-AI-Photo.png">फोटो डाउनलोड करें</a>
+</section>
+
+<div class="footer">Kalka Main</div>
+</main>
+
+<script>
+const photoInput=document.getElementById("photo");
+const preview=document.getElementById("preview");
+const result=document.getElementById("result");
+const statusBox=document.getElementById("status");
+const generate=document.getElementById("generate");
+const download=document.getElementById("download");
+
+let imageData="";
+
+photoInput.addEventListener("change",async()=>{
+  const file=photoInput.files[0];
+  imageData="";
+  preview.style.display="none";
+  result.style.display="none";
+  download.style.display="none";
+
+  if(!file)return;
+  if(!file.type.startsWith("image/")){
+    statusBox.textContent="कृपया फोटो फाइल चुनें।";
+    return;
+  }
+  if(file.size>15*1024*1024){
+    statusBox.textContent="फोटो 15 MB से छोटी चुनें।";
+    return;
+  }
+
+  try{
+    const img=new Image();
+    const tempUrl=URL.createObjectURL(file);
+    img.src=tempUrl;
+    await img.decode();
+
+    const max=1536;
+    const scale=Math.min(1,max/img.width,max/img.height);
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.round(img.width*scale);
+    canvas.height=Math.round(img.height*scale);
+    canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+
+    imageData=canvas.toDataURL("image/jpeg",0.88);
+    preview.src=imageData;
+    preview.style.display="block";
+    statusBox.textContent="फोटो तैयार है। अब अपना स्टाइल चुनें।";
+    URL.revokeObjectURL(tempUrl);
+  }catch(e){
+    statusBox.textContent="यह फोटो नहीं खुल पाई। दूसरी फोटो चुनें।";
+  }
+});
+
+generate.addEventListener("click",async()=>{
+  if(!imageData){
+    statusBox.textContent="पहले अपनी फोटो अपलोड करें।";
+    return;
+  }
+
+  const style=document.getElementById("style").value;
+  const custom=document.getElementById("custom").value.trim();
+  const panels=Number(document.getElementById("panels").value);
+
+  let chosenStyle=style==="CUSTOM"?"custom creative portrait":style;
+  let prompt="Edit the uploaded photograph into "+chosenStyle+". ";
+
+  if(custom){
+    prompt+="Customer's additional instructions: "+custom+". ";
+  }
+
+  if(panels===1){
+    prompt+="Create one beautiful finished image, not a collage. ";
+  }else{
+    prompt+="Create ONE finished image arranged as a clean collage with exactly "+panels+" distinct panels. Each panel should show a different pose, composition or scene of the SAME person. Keep the same identity and recognizable facial features in every panel. Use neat panel divisions. ";
+  }
+
+  prompt+=`The uploaded photo is the identity reference. Preserve the person's recognizable identity as closely as possible: face shape, eyes, nose, mouth, skin tone, age and distinctive features. Do not replace the person with a different face. Keep the person recognizable even when applying the requested art style. Make the result polished, beautiful, detailed and high quality. Do not add a large brand logo, watermark or unrelated text.`;
+
+  generate.disabled=true;
+  result.style.display="none";
+  download.style.display="none";
+  statusBox.textContent="AI आपकी फोटो बना रहा है। कृपया इंतज़ार करें...";
+
+  try{
+    const response=await fetch("/api/edit",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        image:imageData,
+        prompt:prompt
+      })
+    });
+
+    const data=await response.json();
+
+    if(!response.ok){
+      throw new Error(data.error||"फोटो नहीं बन पाई।");
+    }
+    if(!data.image){
+      throw new Error("AI से फोटो प्राप्त नहीं हुई।");
+    }
+
+    const imageUrl="data:image/png;base64,"+data.image;
+    result.src=imageUrl;
+    result.style.display="block";
+    download.href=imageUrl;
+    download.style.display="block";
+    statusBox.textContent="आपकी फोटो तैयार है! ❤️";
+  }catch(error){
+    statusBox.textContent="समस्या: "+error.message;
+  }finally{
+    generate.disabled=false;
+  }
+});
+</script>
+</body>
+  </html>
+  
